@@ -7,13 +7,43 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
 
 class NetWorkRequestExampleViewController: UIViewController {
 
+    @IBOutlet weak var myTableView: UITableView!
+    
+    let searchController = UISearchController(searchResultsController: nil)
+    var searchBar: UISearchBar {
+        return searchController.searchBar
+    }
+    var viewModel = ViewModel()
+    let disposeBag = DisposeBag()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         title = "NetworkRequest"
+        
+        myTableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        configureSearchController()
+        viewModel.data
+            .drive(myTableView.rx.items(cellIdentifier: "Cell")) { _, repository, cell in
+                cell.textLabel?.text = repository.name
+                cell.detailTextLabel?.text = repository.url
+            }.disposed(by: disposeBag)
+        
+        searchBar.rx.text.orEmpty
+            .bind(to: viewModel.searchText)
+            .disposed(by: disposeBag)
+        
+        viewModel.data.asDriver()
+            .map {
+                "\($0.count) Repositories"
+            }
+            .drive(navigationItem.rx.title)
+        .disposed(by: disposeBag)
     }
 
     override func didReceiveMemoryWarning() {
@@ -21,7 +51,14 @@ class NetWorkRequestExampleViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
-
+    func configureSearchController() {
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchBar.showsCancelButton = true
+        searchBar.text = "scotteg"
+        searchBar.placeholder = "Enter Github ID, e.g., \"scotteg\""
+        myTableView.tableHeaderView = searchController.searchBar
+        definesPresentationContext = true
+    }
     /*
     // MARK: - Navigation
 
